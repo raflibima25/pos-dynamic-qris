@@ -1,0 +1,52 @@
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+/backend/qris-pos-api
+/backend/qris-pos-api_unix
+/frontend/.next/
+/frontend/out/
+/frontend/dist/
+
+# Logs
+*.log
+logs/
+
+# Coverage reports
+coverage/
+*.coverprofile
+coverage.out
+coverage.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+
+# Docker
+docker-compose.override.yml
+
+# Test files
+test-results/
+test-report.html
