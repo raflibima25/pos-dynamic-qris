@@ -2,10 +2,8 @@ package storage
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -50,68 +48,39 @@ func (s *SupabaseClient) UploadImage(file io.Reader, fileName string, contentTyp
 	// Generate UUID filename
 	fileExtension := getFileExtension(fileName)
 	uniqueFileName := fmt.Sprintf("%s%s", uuid.New().String(), fileExtension)
-	
-	// Create folder structure: products/{uuid}.ext
 	objectPath := fmt.Sprintf("products/%s", uniqueFileName)
 
-	// Prepare multipart form
-	var buf bytes.Buffer
-	writer := multipart.NewWriter(&buf)
-
-	// Add file part
-	part, err := writer.CreateFormFile("file", uniqueFileName)
-	if err != nil {
-		return "", fmt.Errorf("failed to create form file: %w", err)
-	}
-
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return "", fmt.Errorf("failed to copy file data: %w", err)
-	}
-
-	writer.Close()
-
-	// Create HTTP request
 	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.baseURL, s.bucketName, objectPath)
-	req, err := http.NewRequest("POST", url, &buf)
+
+	// Baca file ke buffer
+	buf := new(bytes.Buffer)
+	_, err := io.Copy(buf, file)
 	if err != nil {
-		return "", fmt.Errorf("failed to create HTTP request: %w", err)
+		return "", fmt.Errorf("failed to read file: %w", err)
 	}
 
-	// Set headers
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.apiKey))
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req, err := http.NewRequest("POST", url, buf)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
 
-	// Execute request
+	// 🔑 set content type sesuai mimetype (image/jpeg, image/png, dll)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.apiKey))
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("x-upsert", "false")
+
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to execute HTTP request: %w", err)
+		return "", fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Read response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var errorResp ErrorResponse
-		if err := json.Unmarshal(body, &errorResp); err == nil {
-			return "", fmt.Errorf("supabase error: %s", errorResp.Message)
-		}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse success response
-	var uploadResp UploadResponse
-	if err := json.Unmarshal(body, &uploadResp); err != nil {
-		s.logger.Warn("Failed to parse upload response, but upload seemed successful", "response", string(body))
-	}
-
-	// Generate public URL
 	publicURL := s.GetPublicURL(objectPath)
-	
 	s.logger.Info("Image uploaded successfully", "path", objectPath, "url", publicURL)
 	return publicURL, nil
 }
