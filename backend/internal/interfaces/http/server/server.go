@@ -10,6 +10,7 @@ import (
 	"qris-pos-backend/internal/interfaces/middleware"
 	"qris-pos-backend/internal/usecases/auth"
 	"qris-pos-backend/internal/usecases/product"
+	"qris-pos-backend/internal/usecases/transaction"
 	pkgAuth "qris-pos-backend/pkg/auth"
 	"qris-pos-backend/pkg/logger"
 
@@ -59,14 +60,17 @@ func (s *Server) setupRouter() {
 	userRepo := repositories.NewUserRepository(s.db)
 	productRepo := repositories.NewProductRepository(s.db)
 	categoryRepo := repositories.NewCategoryRepository(s.db)
+	transactionRepo := repositories.NewTransactionRepository(s.db)
 
 	// Initialize use cases
 	authUseCase := auth.NewAuthUseCase(userRepo, passwordService, jwtService, s.logger)
 	productUseCase := product.NewProductUseCase(productRepo, categoryRepo, s.logger)
+	transactionUseCase := transaction.NewTransactionUseCase(transactionRepo, productRepo, userRepo, s.logger)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authUseCase, s.logger)
 	productHandler := handlers.NewProductHandler(productUseCase, s.logger)
+	transactionHandler := handlers.NewTransactionHandler(transactionUseCase, s.logger)
 
 	// Health check endpoint
 	router.GET("/health", s.healthCheck)
@@ -122,14 +126,17 @@ func (s *Server) setupRouter() {
 			categoriesAdmin.POST("", productHandler.CreateCategory)
 		}
 
-		// Transaction routes (placeholder for Phase 2)
+		// Transaction routes
 		transactions := api.Group("/transactions")
 		transactions.Use(authMiddleware.RequireAdminOrCashier())
 		{
-			transactions.GET("", s.getTransactions)
-			transactions.POST("", s.createTransaction)
-			transactions.GET("/:id", s.getTransaction)
-			transactions.PUT("/:id/cancel", s.cancelTransaction)
+			transactions.GET("", transactionHandler.ListTransactions)
+			transactions.POST("", transactionHandler.CreateTransaction)
+			transactions.GET("/:id", transactionHandler.GetTransaction)
+			transactions.PUT("/:id/cancel", transactionHandler.CancelTransaction)
+			transactions.POST("/:id/items", transactionHandler.AddItemToTransaction)
+			transactions.DELETE("/:id/items/:item_id", transactionHandler.RemoveItemFromTransaction)
+			transactions.PUT("/:id/items/:item_id", transactionHandler.UpdateItemQuantity)
 		}
 
 		// QRIS routes (placeholder for Phase 2)
@@ -202,18 +209,6 @@ func (s *Server) updateProduct(c *gin.Context) {
 }
 func (s *Server) deleteProduct(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "delete product endpoint"})
-}
-func (s *Server) getTransactions(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "get transactions endpoint"})
-}
-func (s *Server) createTransaction(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "create transaction endpoint"})
-}
-func (s *Server) getTransaction(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "get transaction endpoint"})
-}
-func (s *Server) cancelTransaction(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "cancel transaction endpoint"})
 }
 func (s *Server) generateQRIS(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "generate qris endpoint"})

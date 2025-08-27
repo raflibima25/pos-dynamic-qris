@@ -20,14 +20,15 @@ export interface Category {
 export interface Product {
   id: string
   name: string
-  description: string
+  description?: string
   price: number
   stock: number
-  category_id: string
-  sku: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
+  categoryId: string
+  sku?: string
+  image?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
   category?: Category
 }
 
@@ -36,26 +37,29 @@ export interface CartItem {
   quantity: number
 }
 
+export type TransactionStatus = 'pending' | 'paid' | 'cancelled' | 'expired'
+
 export interface Transaction {
   id: string
-  user_id: string
-  total_amount: number
-  tax_amount: number
+  userId: string
+  totalAmount: number
+  taxAmount: number
   discount: number
-  status: 'pending' | 'paid' | 'cancelled' | 'expired'
+  status: TransactionStatus
   notes?: string
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
   items: TransactionItem[]
+  user?: User
 }
 
 export interface TransactionItem {
   id: string
-  transaction_id: string
-  product_id: string
+  transactionId: string
+  productId: string
   quantity: number
-  unit_price: number
-  total_price: number
+  unitPrice: number
+  totalPrice: number
   product?: Product
 }
 

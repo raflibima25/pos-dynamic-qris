@@ -93,7 +93,7 @@ func NewTransactionUseCase(
 
 func (uc *TransactionUseCase) CreateTransaction(ctx context.Context, req *CreateTransactionRequest) (*TransactionResponse, error) {
 	// Validate user exists
-	user, err := uc.userRepo.GetByID(ctx, req.UserID)
+	_, err := uc.userRepo.GetByID(ctx, req.UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, appErrors.ErrUserNotFound

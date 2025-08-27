@@ -3,6 +3,7 @@ package handlers
 import (
 	"strconv"
 
+	"qris-pos-backend/internal/domain/entities"
 	"qris-pos-backend/internal/domain/repositories"
 	"qris-pos-backend/internal/interfaces/middleware"
 	"qris-pos-backend/internal/usecases/transaction"
@@ -111,10 +112,14 @@ func (h *TransactionHandler) GetTransaction(c *gin.Context) {
 // @Router /transactions [get]
 func (h *TransactionHandler) ListTransactions(c *gin.Context) {
 	filters := repositories.TransactionFilters{
-		UserID:   c.Query("user_id"),
-		Status:   c.Query("status"),
-		Limit:    20, // default
-		Offset:   0,  // default
+		UserID: c.Query("user_id"),
+		Limit:  20, // default
+		Offset: 0,  // default
+	}
+
+	// Convert status string to enum if provided
+	if statusStr := c.Query("status"); statusStr != "" {
+		filters.Status = entities.TransactionStatus(statusStr)
 	}
 
 	if dateFrom := c.Query("date_from"); dateFrom != "" {
