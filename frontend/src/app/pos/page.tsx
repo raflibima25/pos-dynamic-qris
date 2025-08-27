@@ -15,9 +15,10 @@ export default function POSPage() {
   const { products, categories, listProducts, listCategories, loading } = useProductStore()
   const { items, summary } = useCartStore()
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (but wait for auth check to complete)
   useEffect(() => {
-    if (!user) {
+    const token = useAuthStore.getState().token
+    if (!token && !user) {
       redirect('/login')
     }
   }, [user])

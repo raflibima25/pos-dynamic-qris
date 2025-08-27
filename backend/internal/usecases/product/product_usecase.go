@@ -19,6 +19,7 @@ type CreateProductRequest struct {
 	Stock       int     `json:"stock" validate:"required,gte=0"`
 	CategoryID  string  `json:"category_id" validate:"required,uuid"`
 	SKU         string  `json:"sku"`
+	ImageURL    string  `json:"image_url"`
 }
 
 type UpdateProductRequest struct {
@@ -28,6 +29,7 @@ type UpdateProductRequest struct {
 	Stock       int     `json:"stock" validate:"required,gte=0"`
 	CategoryID  string  `json:"category_id" validate:"required,uuid"`
 	SKU         string  `json:"sku"`
+	ImageURL    string  `json:"image_url"`
 	IsActive    *bool   `json:"is_active"`
 }
 
@@ -39,6 +41,7 @@ type ProductResponse struct {
 	Stock       int                    `json:"stock"`
 	CategoryID  string                 `json:"category_id"`
 	SKU         string                 `json:"sku"`
+	ImageURL    string                 `json:"image_url"`
 	IsActive    bool                   `json:"is_active"`
 	CreatedAt   string                 `json:"created_at"`
 	UpdatedAt   string                 `json:"updated_at"`
@@ -111,6 +114,9 @@ func (uc *ProductUseCase) CreateProduct(ctx context.Context, req *CreateProductR
 	if err != nil {
 		return nil, err
 	}
+	
+	// Set image URL if provided
+	product.ImageURL = req.ImageURL
 
 	if err := uc.productRepo.Create(ctx, product); err != nil {
 		uc.logger.Error("Failed to create product", "error", err)
@@ -175,6 +181,7 @@ func (uc *ProductUseCase) UpdateProduct(ctx context.Context, id string, req *Upd
 	product.Stock = req.Stock
 	product.CategoryID = req.CategoryID
 	product.SKU = req.SKU
+	product.ImageURL = req.ImageURL
 
 	if req.IsActive != nil {
 		product.IsActive = *req.IsActive
@@ -305,6 +312,7 @@ func (uc *ProductUseCase) mapProductToResponse(product *entities.Product) *Produ
 		Stock:       product.Stock,
 		CategoryID:  product.CategoryID,
 		SKU:         product.SKU,
+		ImageURL:    product.ImageURL,
 		IsActive:    product.IsActive,
 		CreatedAt:   product.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:   product.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),

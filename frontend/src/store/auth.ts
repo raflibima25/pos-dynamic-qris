@@ -28,6 +28,9 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.login(email, password)
           const { user, token } = response.data
           
+          // Set token to API client
+          api.setToken(token)
+          
           set({ 
             user, 
             token, 

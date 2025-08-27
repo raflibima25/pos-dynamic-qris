@@ -25,7 +25,7 @@ export interface Product {
   stock: number
   categoryId: string
   sku?: string
-  image?: string
+  imageUrl?: string
   isActive: boolean
   createdAt: string
   updatedAt: string

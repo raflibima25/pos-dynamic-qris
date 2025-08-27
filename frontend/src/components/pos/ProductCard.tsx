@@ -37,9 +37,9 @@ export function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
       {/* Product Image */}
       <div className="aspect-square relative overflow-hidden rounded-t-lg bg-gray-100">
-        {product.image ? (
+        {product.imageUrl ? (
           <img
-            src={product.image}
+            src={product.imageUrl}
             alt={product.name}
             className="w-full h-full object-cover"
           />

@@ -6,6 +6,7 @@ import (
 
 	"qris-pos-backend/internal/infrastructure/config"
 	"qris-pos-backend/internal/infrastructure/database/repositories"
+	"qris-pos-backend/internal/infrastructure/storage"
 	"qris-pos-backend/internal/interfaces/http/handlers"
 	"qris-pos-backend/internal/interfaces/middleware"
 	"qris-pos-backend/internal/usecases/auth"
@@ -55,6 +56,9 @@ func (s *Server) setupRouter() {
 	passwordService := pkgAuth.NewPasswordService()
 	jwtService := pkgAuth.NewJWTService(s.config.JWT.Secret, s.config.JWT.ExpiryHour)
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
+	
+	// Initialize storage client
+	storageClient := storage.NewSupabaseClient(s.config.Storage, s.logger)
 
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(s.db)
@@ -71,6 +75,7 @@ func (s *Server) setupRouter() {
 	authHandler := handlers.NewAuthHandler(authUseCase, s.logger)
 	productHandler := handlers.NewProductHandler(productUseCase, s.logger)
 	transactionHandler := handlers.NewTransactionHandler(transactionUseCase, s.logger)
+	imageHandler := handlers.NewImageHandler(storageClient, s.config.Storage, s.logger)
 
 	// Health check endpoint
 	router.GET("/health", s.healthCheck)
@@ -153,6 +158,14 @@ func (s *Server) setupRouter() {
 		{
 			payments.POST("/callback", s.paymentCallback) // Public - webhook from Midtrans
 			payments.GET("/:id/status", authMiddleware.RequireAdminOrCashier(), s.getPaymentStatus)
+		}
+
+		// Image routes (Admin only)
+		images := api.Group("/images")
+		images.Use(authMiddleware.RequireAdmin())
+		{
+			images.POST("/upload", imageHandler.UploadImage)
+			images.DELETE("/delete", imageHandler.DeleteImage)
 		}
 	}
 

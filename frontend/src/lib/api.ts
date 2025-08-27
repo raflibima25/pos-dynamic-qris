@@ -28,13 +28,18 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    skipJsonContentType: boolean = false
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
     
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...((options.headers as Record<string, string>) || {}),
+    }
+    
+    // Only add Content-Type for JSON requests
+    if (!skipJsonContentType) {
+      headers['Content-Type'] = 'application/json'
     }
 
     if (this.token) {
@@ -181,6 +186,42 @@ class ApiClient {
     return this.request<any>('/categories', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  }
+
+  // Generic HTTP methods
+  async get(endpoint: string) {
+    return this.request<any>(endpoint)
+  }
+
+  async post(endpoint: string, data?: any, customHeaders?: Record<string, string>) {
+    const isFormData = data instanceof FormData
+    
+    return this.request<any>(endpoint, {
+      method: 'POST',
+      body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
+      headers: customHeaders,
+    }, isFormData)
+  }
+
+  async put(endpoint: string, data?: any) {
+    return this.request<any>(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async patch(endpoint: string, data?: any) {
+    return this.request<any>(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async delete(endpoint: string, data?: any) {
+    return this.request<any>(endpoint, {
+      method: 'DELETE',
+      body: data ? JSON.stringify(data) : undefined,
     })
   }
 }

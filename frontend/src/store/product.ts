@@ -31,11 +31,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const params = categoryId ? `?category_id=${categoryId}` : ''
       const response = await api.get(`/products${params}`)
-      const products = response.data.data || []
+      const products = response.data || []
       
       set({ products, loading: false })
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to load products'
+      const errorMessage = error.message || 'Failed to load products'
       set({ error: errorMessage, loading: false })
     }
   },
@@ -45,11 +45,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
     
     try {
       const response = await api.get('/categories')
-      const categories = response.data.data || []
+      const categories = response.data || []
       
       set({ categories, loading: false })
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to load categories'
+      const errorMessage = error.message || 'Failed to load categories'
       set({ error: errorMessage, loading: false })
     }
   },
@@ -75,7 +75,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     
     try {
       const response = await api.post('/products', productData)
-      const newProduct = response.data.data
+      const newProduct = response.data
       
       set(state => ({
         products: [...state.products, newProduct],
@@ -84,7 +84,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       
       return newProduct
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to create product'
+      const errorMessage = error.message || 'Failed to create product'
       set({ error: errorMessage, loading: false })
       return null
     }
@@ -121,7 +121,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         loading: false
       }))
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete product'
+      const errorMessage = error.message || 'Failed to delete product'
       set({ error: errorMessage, loading: false })
     }
   },

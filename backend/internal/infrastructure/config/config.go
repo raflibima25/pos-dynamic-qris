@@ -11,6 +11,7 @@ type Config struct {
 	Database DatabaseConfig
 	Midtrans MidtransConfig
 	JWT      JWTConfig
+	Storage  StorageConfig
 }
 
 type AppConfig struct {
@@ -46,6 +47,13 @@ type JWTConfig struct {
 	ExpiryHour int
 }
 
+type StorageConfig struct {
+	SupabaseURL       string
+	SupabaseKey       string
+	BucketName        string
+	MaxFileSizeMB     int
+}
+
 func Load() (*Config, error) {
 	config := &Config{
 		App: AppConfig{
@@ -75,6 +83,12 @@ func Load() (*Config, error) {
 		JWT: JWTConfig{
 			Secret:     getEnv("JWT_SECRET", "your-secret-key"),
 			ExpiryHour: getEnvInt("JWT_EXPIRY_HOUR", 24),
+		},
+		Storage: StorageConfig{
+			SupabaseURL:       getEnv("SUPABASE_URL", ""),
+			SupabaseKey:       getEnv("SUPABASE_ANON_KEY", ""),
+			BucketName:        getEnv("SUPABASE_BUCKET_NAME", "product-images"),
+			MaxFileSizeMB:     getEnvInt("MAX_FILE_SIZE_MB", 2),
 		},
 	}
 

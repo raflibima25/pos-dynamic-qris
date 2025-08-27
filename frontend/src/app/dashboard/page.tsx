@@ -226,7 +226,7 @@ export default function DashboardPage() {
                 {content}
               </div>
             ) : (
-              <Link key={item.title} href={item.href}>
+              <Link key={item.title} href={(item.href || '#') as any}>
                 {content}
               </Link>
             )

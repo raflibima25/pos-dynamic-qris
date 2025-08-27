@@ -29,7 +29,7 @@ export function ShoppingCart({ items }: ShoppingCartProps) {
     <div className="space-y-3 max-h-96 overflow-y-auto">
       {items.map(item => (
         <CartItemRow
-          key={item.id || `${item.product.id}-${Date.now()}`}
+          key={`${item.product.id}-${Date.now()}`}
           item={item}
           onUpdateQuantity={updateQuantity}
           onRemove={removeItem}
@@ -58,9 +58,9 @@ function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowProps) {
     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
       {/* Product Image */}
       <div className="w-12 h-12 rounded bg-gray-200 flex-shrink-0 overflow-hidden">
-        {item.product.image ? (
+        {item.product.imageUrl ? (
           <img
-            src={item.product.image}
+            src={item.product.imageUrl}
             alt={item.product.name}
             className="w-full h-full object-cover"
           />

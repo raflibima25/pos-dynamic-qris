@@ -106,7 +106,7 @@ export default function LoginPage() {
             <p className="text-sm text-gray-600">
               Demo credentials: <br />
               <span className="font-medium">Email:</span> admin@qrispos.com <br />
-              <span className="font-medium">Password:</span> admin123
+              <span className="font-medium">Password:</span> Admin@123
             </p>
           </div>
 
