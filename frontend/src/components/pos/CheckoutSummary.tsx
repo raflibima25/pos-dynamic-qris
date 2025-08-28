@@ -5,6 +5,7 @@ import { CartSummary } from '@/store/cart'
 import { useCartStore } from '@/store/cart'
 import { useTransactionStore } from '@/store/transaction'
 import { CheckoutModal } from './CheckoutModal'
+import { formatRupiah } from '@/lib/currency'
 
 interface CheckoutSummaryProps {
   summary: CartSummary
@@ -79,24 +80,24 @@ export function CheckoutSummary({ summary }: CheckoutSummaryProps) {
         <div className="space-y-2 pt-4 border-t border-gray-200">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Subtotal ({summary.itemCount} items)</span>
-            <span className="text-gray-900">${summary.subtotal.toFixed(2)}</span>
+            <span className="text-gray-900">{formatRupiah(summary.subtotal)}</span>
           </div>
           
           {summary.discount > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Discount ({discountPercent}%)</span>
-              <span className="text-red-600">-${summary.discount.toFixed(2)}</span>
+              <span className="text-red-600">-{formatRupiah(summary.discount)}</span>
             </div>
           )}
           
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Tax (10%)</span>
-            <span className="text-gray-900">${summary.tax.toFixed(2)}</span>
+            <span className="text-gray-900">{formatRupiah(summary.tax)}</span>
           </div>
           
           <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-200">
             <span>Total</span>
-            <span>${summary.total.toFixed(2)}</span>
+            <span>{formatRupiah(summary.total)}</span>
           </div>
         </div>
 
@@ -119,7 +120,7 @@ export function CheckoutSummary({ summary }: CheckoutSummaryProps) {
               Processing...
             </div>
           ) : (
-            `Proceed to Checkout • $${summary.total.toFixed(2)}`
+            `Proceed to Checkout • ${formatRupiah(summary.total)}`
           )}
         </button>
       </div>

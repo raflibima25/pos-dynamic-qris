@@ -33,8 +33,11 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
     
-    const headers: Record<string, string> = {
-      ...((options.headers as Record<string, string>) || {}),
+    const headers: Record<string, string> = {}
+    
+    // Only add custom headers if they exist and we're not skipping content type
+    if (!skipJsonContentType && options.headers) {
+      Object.assign(headers, options.headers as Record<string, string>)
     }
     
     // Only add Content-Type for JSON requests
@@ -42,13 +45,18 @@ class ApiClient {
       headers['Content-Type'] = 'application/json'
     }
 
+    // Always add Authorization if token exists
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`
     }
 
     const config: RequestInit = {
       ...options,
-      headers,
+      // Only set headers if we have any, otherwise omit entirely for FormData
+      ...(skipJsonContentType ? 
+        (this.token ? { headers: { Authorization: `Bearer ${this.token}` } } : {}) : 
+        { headers }
+      ),
     }
 
     const response = await fetch(url, config)
@@ -200,7 +208,7 @@ class ApiClient {
     return this.request<any>(endpoint, {
       method: 'POST',
       body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
-      headers: customHeaders,
+      headers: isFormData ? undefined : customHeaders, // Don't set headers for FormData
     }, isFormData)
   }
 

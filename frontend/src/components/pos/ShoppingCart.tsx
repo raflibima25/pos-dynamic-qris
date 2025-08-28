@@ -3,6 +3,7 @@
 import { CartItem } from '@/types'
 import { useCartStore } from '@/store/cart'
 import { TrashIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/outline'
+import { formatRupiah } from '@/lib/currency'
 
 interface ShoppingCartProps {
   items: CartItem[]
@@ -55,69 +56,75 @@ function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-      {/* Product Image */}
-      <div className="w-12 h-12 rounded bg-gray-200 flex-shrink-0 overflow-hidden">
-        {item.product.imageUrl ? (
-          <img
-            src={item.product.imageUrl}
-            alt={item.product.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-        )}
-      </div>
+    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+      {/* Top Row - Image, Name, Remove */}
+      <div className="flex items-start gap-3">
+        {/* Product Image */}
+        <div className="w-12 h-12 rounded bg-gray-200 flex-shrink-0 overflow-hidden">
+          {item.product.image_url ? (
+            <img
+              src={item.product.image_url}
+              alt={item.product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+          )}
+        </div>
 
-      {/* Product Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
-          {item.product.name}
-        </p>
-        <p className="text-sm text-gray-500">
-          ${item.product.price.toFixed(2)} each
-        </p>
-      </div>
+        {/* Product Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {item.product.name}
+          </p>
+          <p className="text-xs text-gray-500">
+            {formatRupiah(item.product.price)} each
+          </p>
+        </div>
 
-      {/* Quantity Controls */}
-      <div className="flex items-center gap-2">
+        {/* Remove Button */}
         <button
-          onClick={() => handleQuantityChange(item.quantity - 1)}
-          className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+          onClick={() => onRemove(item.product.id)}
+          className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
         >
-          <MinusIcon className="w-3 h-3" />
-        </button>
-        
-        <span className="w-8 text-center text-sm font-medium text-gray-900">
-          {item.quantity}
-        </span>
-        
-        <button
-          onClick={() => handleQuantityChange(item.quantity + 1)}
-          className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
-        >
-          <PlusIcon className="w-3 h-3" />
+          <TrashIcon className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Subtotal */}
-      <div className="text-right">
-        <p className="text-sm font-medium text-gray-900">
-          ${(item.product.price * item.quantity).toFixed(2)}
-        </p>
-      </div>
+      {/* Bottom Row - Quantity Controls and Subtotal */}
+      <div className="flex items-center justify-between">
+        {/* Quantity Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleQuantityChange(item.quantity - 1)}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <MinusIcon className="w-3 h-3" />
+          </button>
+          
+          <span className="w-8 text-center text-sm font-medium text-gray-900">
+            {item.quantity}
+          </span>
+          
+          <button
+            onClick={() => handleQuantityChange(item.quantity + 1)}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <PlusIcon className="w-3 h-3" />
+          </button>
+        </div>
 
-      {/* Remove Button */}
-      <button
-        onClick={() => onRemove(item.product.id)}
-        className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-      >
-        <TrashIcon className="w-4 h-4" />
-      </button>
+        {/* Subtotal */}
+        <div className="text-right">
+          <p className="text-sm font-semibold text-gray-900">
+            {formatRupiah(item.product.price * item.quantity)}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

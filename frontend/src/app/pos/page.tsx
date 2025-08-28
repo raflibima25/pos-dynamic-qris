@@ -8,6 +8,9 @@ import { useProductStore } from '@/store/product'
 import { useCartStore } from '@/store/cart'
 import { useAuthStore } from '@/store/auth'
 import { redirect } from 'next/navigation'
+import { formatRupiah } from '@/lib/currency'
+import { Navbar } from '@/components/layout/Navbar'
+import { MobileNav } from '@/components/layout/MobileNav'
 
 export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -34,31 +37,22 @@ export default function POSPage() {
   // Filter products by category
   const filteredProducts = selectedCategory === 'all' 
     ? products 
-    : products.filter(product => product.categoryId === selectedCategory)
+    : products.filter(product => product.category_id === selectedCategory)
 
   if (!user) {
     return null // Will redirect
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-gray-900">
-                Point of Sale
-              </h1>
-              <div className="text-sm text-gray-500">
-                Welcome, {user.name}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Cart: {summary.itemCount} items • ${summary.total.toFixed(2)}
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 pb-16 md:pb-0">
+      {/* Navigation */}
+      <Navbar backHref="/dashboard" />
+      
+      {/* Cart Summary Bar */}
+      <div className="bg-white border-b px-4 py-2">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-sm text-gray-600 text-center">
+            Cart: {summary.itemCount} items • {formatRupiah(summary.total)}
           </div>
         </div>
       </div>
@@ -124,6 +118,9 @@ export default function POSPage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   )
 }

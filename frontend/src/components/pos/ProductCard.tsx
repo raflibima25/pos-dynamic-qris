@@ -4,6 +4,7 @@ import { Product } from '@/types'
 import { useCartStore } from '@/store/cart'
 import { useState } from 'react'
 import { ShoppingCartIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/outline'
+import { formatRupiah } from '@/lib/currency'
 
 interface ProductCardProps {
   product: Product
@@ -37,9 +38,9 @@ export function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
       {/* Product Image */}
       <div className="aspect-square relative overflow-hidden rounded-t-lg bg-gray-100">
-        {product.imageUrl ? (
+        {product.image_url ? (
           <img
-            src={product.imageUrl}
+            src={product.image_url}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -73,7 +74,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-lg font-semibold text-gray-900">
-              ${product.price.toFixed(2)}
+              {formatRupiah(product.price)}
             </p>
             <p className="text-sm text-gray-500">
               Stock: {product.stock}

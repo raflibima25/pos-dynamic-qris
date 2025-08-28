@@ -6,6 +6,11 @@ import { useAuthStore } from '@/store/auth'
 import { redirect } from 'next/navigation'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { AddProductModal } from '@/components/products/AddProductModal'
+import { EditProductModal } from '@/components/products/EditProductModal'
+import { formatRupiah } from '@/lib/currency'
+import { Product } from '@/types'
+import { Navbar } from '@/components/layout/Navbar'
+import { MobileNav } from '@/components/layout/MobileNav'
 
 export default function ProductsPage() {
   const { user } = useAuthStore()
@@ -13,6 +18,8 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   // Redirect if not admin
   useEffect(() => {
@@ -35,34 +42,46 @@ export default function ProductsPage() {
 
   // Filter products
   const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory
+    const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
     return matchesCategory && matchesSearch
   })
+
+  // Handle edit product
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product)
+    setShowEditModal(true)
+  }
+
+  // Handle close edit modal
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setSelectedProduct(null)
+  }
 
   if (!user || user.role !== 'admin') {
     return null
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Product Management</h1>
-              <p className="text-sm text-gray-500">Manage your inventory and product catalog</p>
-            </div>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Add Product
-            </button>
+    <div className="min-h-screen bg-gray-50 pb-16 md:pb-0">
+      {/* Navigation */}
+      <Navbar backHref="/dashboard" />
+      
+      {/* Add Product Bar */}
+      <div className="bg-white border-b px-4 py-3">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div>
+            <p className="text-sm text-gray-500">Manage your inventory and product catalog</p>
           </div>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add Product
+          </button>
         </div>
       </div>
 
@@ -125,9 +144,9 @@ export default function ProductsPage() {
               <div key={product.id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
                 {/* Product Image */}
                 <div className="aspect-square relative overflow-hidden rounded-t-lg bg-gray-100">
-                  {product.imageUrl ? (
+                  {product.image_url ? (
                     <img
-                      src={product.imageUrl}
+                      src={product.image_url}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
@@ -167,7 +186,7 @@ export default function ProductsPage() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-lg font-bold text-gray-900">
-                        ${product.price.toFixed(2)}
+                        {formatRupiah(product.price)}
                       </p>
                       <p className="text-sm text-gray-500">
                         Stock: {product.stock}
@@ -175,7 +194,7 @@ export default function ProductsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500">
-                        {categories.find(c => c.id === product.categoryId)?.name}
+                        {categories.find(c => c.id === product.category_id)?.name}
                       </p>
                       <p className="text-xs text-gray-500">
                         {product.sku}
@@ -185,7 +204,10 @@ export default function ProductsPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                    <button 
+                      onClick={() => handleEditProduct(product)}
+                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                    >
                       <PencilIcon className="w-4 h-4" />
                       Edit
                     </button>
@@ -230,6 +252,16 @@ export default function ProductsPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
       />
+
+      {/* Edit Product Modal */}
+      <EditProductModal 
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        product={selectedProduct}
+      />
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   )
 }

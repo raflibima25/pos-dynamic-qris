@@ -23,12 +23,12 @@ export interface Product {
   description?: string
   price: number
   stock: number
-  categoryId: string
+  category_id: string
   sku?: string
-  imageUrl?: string
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
+  image_url?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
   category?: Category
 }
 
