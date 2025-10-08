@@ -390,7 +390,17 @@ func (uc *PaymentUseCase) RefreshQRIS(ctx context.Context, transactionID string)
 	}
 
 	// Generate new QRIS via Midtrans
-	orderID := fmt.Sprintf("qris_%s_%d", transactionID, paymentEntity.UpdatedAt.Unix())
+	// Use short transaction ID (first 8 chars) to keep order_id under 50 chars limit
+	shortTxID := transactionID
+	if len(shortTxID) > 8 {
+		shortTxID = shortTxID[:8]
+	}
+	now := time.Now()
+	orderID := fmt.Sprintf("qris-%s-%d", shortTxID, now.Unix())
+
+	// Store order_id in payment entity for status checking
+	paymentEntity.OrderID = orderID
+
 	qrisReq := payment.QRISRequest{
 		TransactionID:  transactionID,
 		OrderID:        orderID,
@@ -407,9 +417,8 @@ func (uc *PaymentUseCase) RefreshQRIS(ctx context.Context, transactionID string)
 		return nil, fmt.Errorf("failed to generate QRIS: %w", err)
 	}
 
-	// Update payment expiry
-	now := paymentEntity.UpdatedAt
-	newExpiry := now.Add(10 * time.Minute) // Default 10 minutes
+	// Update payment expiry using the same 'now' used for order_id
+	newExpiry := now.Add(time.Duration(uc.defaultExpiryMin) * time.Minute)
 	paymentEntity.ExpiresAt = newExpiry
 	paymentEntity.Status = entities.PaymentPending
 	paymentEntity.ExternalID = "" // Clear previous external ID
