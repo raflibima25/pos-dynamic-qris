@@ -128,8 +128,8 @@ func (uc *TransactionUseCase) CreateTransaction(ctx context.Context, req *Create
 
 	uc.logger.Info("Transaction created successfully", "transaction_id", transaction.ID, "user_id", req.UserID)
 
-	// Get full transaction with relations
-	fullTransaction, err := uc.transactionRepo.GetByID(ctx, transaction.ID)
+	// Get full transaction with all relations (User, Items, Product)
+	fullTransaction, err := uc.transactionRepo.GetByIDWithDetails(ctx, transaction.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,8 @@ func (uc *TransactionUseCase) CreateTransaction(ctx context.Context, req *Create
 }
 
 func (uc *TransactionUseCase) GetTransaction(ctx context.Context, id string) (*TransactionResponse, error) {
-	transaction, err := uc.transactionRepo.GetByID(ctx, id)
+	// Get transaction with all details
+	transaction, err := uc.transactionRepo.GetByIDWithDetails(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, appErrors.ErrTransactionNotFound

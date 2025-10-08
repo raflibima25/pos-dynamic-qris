@@ -23,11 +23,12 @@ const (
 )
 
 type Payment struct {
-	ID               string         `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID               string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	TransactionID    string         `json:"transaction_id" gorm:"type:uuid;not null"`
 	Amount           float64        `json:"amount" gorm:"type:decimal(10,2);not null;check:amount >= 0"`
 	Method           PaymentMethod  `json:"method" gorm:"type:varchar(50);not null;check:method IN ('qris')"`
 	Status           PaymentStatus  `json:"status" gorm:"type:varchar(50);not null;check:status IN ('pending', 'success', 'failed', 'expired', 'cancelled')"`
+	OrderID          string         `json:"order_id"`              // Midtrans order ID for status checking
 	ExternalID       string         `json:"external_id"`           // Midtrans transaction ID
 	ExternalResponse string         `json:"external_response"`     // Midtrans response JSON
 	PaidAt           *time.Time     `json:"paid_at"`
@@ -46,18 +47,17 @@ func (Payment) TableName() string {
 }
 
 func (p *Payment) BeforeCreate(tx *gorm.DB) (err error) {
-	if p.ID == "" {
-		p.ID = uuid.New().String()
-	}
+	// Database handles UUID generation via DEFAULT gen_random_uuid()
+	// Do not set ID here to avoid conflicts
 	return
 }
 
 type QRISCode struct {
-	ID            string         `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID            string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	TransactionID string         `json:"transaction_id" gorm:"type:uuid;not null"`
 	PaymentID     string         `json:"payment_id" gorm:"type:uuid;not null"`
-	QRCode        string         `json:"qr_code" gorm:"not null"`
-	QRImage       string         `json:"qr_image"`                                  // Base64 encoded image
+	QRCode        string         `json:"qr_code" gorm:"not null"`    // QRIS EMVCo string for QR generation
+	URL           string         `json:"url"`                        // Midtrans simulator URL for testing
 	ExpiresAt     time.Time      `json:"expires_at" gorm:"not null"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
@@ -72,9 +72,8 @@ func (QRISCode) TableName() string {
 }
 
 func (q *QRISCode) BeforeCreate(tx *gorm.DB) (err error) {
-	if q.ID == "" {
-		q.ID = uuid.New().String()
-	}
+	// Database handles UUID generation via DEFAULT gen_random_uuid()
+	// Do not set ID here to avoid conflicts
 	return
 }
 
@@ -83,7 +82,6 @@ func NewPayment(transactionID string, amount float64, expiryMinutes int) *Paymen
 	expiresAt := now.Add(time.Duration(expiryMinutes) * time.Minute)
 
 	return &Payment{
-		ID:            uuid.New().String(),
 		TransactionID: transactionID,
 		Amount:        amount,
 		Method:        PaymentMethodQRIS,
@@ -117,7 +115,7 @@ func (p *Payment) MarkAsExpired() {
 	p.Status = PaymentExpired
 }
 
-func NewQRISCode(transactionID, paymentID, qrCode, qrImage string, expiryMinutes int) *QRISCode {
+func NewQRISCode(transactionID, paymentID, qrCode, url string, expiryMinutes int) *QRISCode {
 	now := time.Now()
 	expiresAt := now.Add(time.Duration(expiryMinutes) * time.Minute)
 
@@ -126,7 +124,7 @@ func NewQRISCode(transactionID, paymentID, qrCode, qrImage string, expiryMinutes
 		TransactionID: transactionID,
 		PaymentID:     paymentID,
 		QRCode:        qrCode,
-		QRImage:       qrImage,
+		URL:           url,
 		ExpiresAt:     expiresAt,
 	}
 }

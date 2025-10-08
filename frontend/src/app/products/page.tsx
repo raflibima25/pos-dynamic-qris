@@ -40,8 +40,11 @@ export default function ProductsPage() {
     }
   }, [user, listProducts, listCategories])
 
-  // Filter products
+  // Filter products with safety check
   const filteredProducts = products.filter(product => {
+    // Safety check: skip undefined or null products
+    if (!product || !product.name) return false
+
     const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))

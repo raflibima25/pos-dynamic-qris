@@ -37,6 +37,7 @@ var (
 	ErrPaymentFailed   = errors.New("payment failed")
 	ErrPaymentExpired  = errors.New("payment expired")
 	ErrQRISExpired     = errors.New("QRIS code expired")
+	ErrPaymentNotFound = errors.New("payment not found")
 )
 
 type AppError struct {

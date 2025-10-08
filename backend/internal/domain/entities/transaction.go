@@ -17,7 +17,7 @@ const (
 )
 
 type Transaction struct {
-	ID          string            `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID          string            `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID      string            `json:"user_id" gorm:"type:uuid;not null"`
 	TotalAmount float64           `json:"total_amount" gorm:"type:decimal(10,2);not null;check:total_amount >= 0"`
 	TaxAmount   float64           `json:"tax_amount" gorm:"type:decimal(10,2);default:0;check:tax_amount >= 0"`
@@ -47,7 +47,7 @@ func (t *Transaction) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 type TransactionItem struct {
-	ID            string         `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID            string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	TransactionID string         `json:"transaction_id" gorm:"type:uuid;not null"`
 	ProductID     string         `json:"product_id" gorm:"type:uuid;not null"`
 	Quantity      int            `json:"quantity" gorm:"not null;check:quantity > 0"`
@@ -66,9 +66,8 @@ func (TransactionItem) TableName() string {
 }
 
 func (ti *TransactionItem) BeforeCreate(tx *gorm.DB) (err error) {
-	if ti.ID == "" {
-		ti.ID = uuid.New().String()
-	}
+	// Database handles UUID generation via DEFAULT gen_random_uuid()
+	// Do not set ID here to avoid conflicts
 	return
 }
 
@@ -100,8 +99,8 @@ func (t *Transaction) AddItem(productID string, product *Product, quantity int) 
 	unitPrice := product.Price
 	totalPrice := unitPrice * float64(quantity)
 	
+	// Let the database handle ID generation
 	item := TransactionItem{
-		ID:            uuid.New().String(),
 		TransactionID: t.ID,
 		ProductID:     productID,
 		Quantity:      quantity,

@@ -6,10 +6,13 @@ import (
 
 	"qris-pos-backend/internal/infrastructure/config"
 	"qris-pos-backend/internal/infrastructure/database/repositories"
+	infraPayment "qris-pos-backend/internal/infrastructure/payment"
+	"qris-pos-backend/internal/infrastructure/qrcode"
 	"qris-pos-backend/internal/infrastructure/storage"
 	"qris-pos-backend/internal/interfaces/http/handlers"
 	"qris-pos-backend/internal/interfaces/middleware"
 	"qris-pos-backend/internal/usecases/auth"
+	usecasePayment "qris-pos-backend/internal/usecases/payment"
 	"qris-pos-backend/internal/usecases/product"
 	"qris-pos-backend/internal/usecases/transaction"
 	pkgAuth "qris-pos-backend/pkg/auth"
@@ -56,7 +59,7 @@ func (s *Server) setupRouter() {
 	passwordService := pkgAuth.NewPasswordService()
 	jwtService := pkgAuth.NewJWTService(s.config.JWT.Secret, s.config.JWT.ExpiryHour)
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
-	
+
 	// Initialize storage client
 	storageClient := storage.NewSupabaseClient(s.config.Storage, s.logger)
 
@@ -65,23 +68,31 @@ func (s *Server) setupRouter() {
 	productRepo := repositories.NewProductRepository(s.db)
 	categoryRepo := repositories.NewCategoryRepository(s.db)
 	transactionRepo := repositories.NewTransactionRepository(s.db)
+	paymentRepo := repositories.NewPaymentRepository(s.db)
+
+	// Initialize infrastructure services
+	midtransClient := infraPayment.NewMidtransClient(s.config.Midtrans)
+	qrCodeGenerator := qrcode.NewQRCodeGenerator()
 
 	// Initialize use cases
 	authUseCase := auth.NewAuthUseCase(userRepo, passwordService, jwtService, s.logger)
 	productUseCase := product.NewProductUseCase(productRepo, categoryRepo, s.logger)
 	transactionUseCase := transaction.NewTransactionUseCase(transactionRepo, productRepo, userRepo, s.logger)
+	paymentUseCase := usecasePayment.NewPaymentUseCase(paymentRepo, transactionRepo, midtransClient, qrCodeGenerator, s.logger)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authUseCase, s.logger)
 	productHandler := handlers.NewProductHandler(productUseCase, s.logger)
 	transactionHandler := handlers.NewTransactionHandler(transactionUseCase, s.logger)
+	paymentHandler := handlers.NewPaymentHandler(paymentUseCase, s.logger)
 	imageHandler := handlers.NewImageHandler(storageClient, s.config.Storage, s.logger)
 
 	// Health check endpoint
-	router.GET("/health", s.healthCheck)
 
 	// API routes
 	api := router.Group("/api/v1")
+	api.GET("/health", s.healthCheck)
+
 	{
 		// Auth routes (public)
 		authGroup := api.Group("/auth")
@@ -144,20 +155,20 @@ func (s *Server) setupRouter() {
 			transactions.PUT("/:id/items/:item_id", transactionHandler.UpdateItemQuantity)
 		}
 
-		// QRIS routes (placeholder for Phase 2)
+		// QRIS routes (Phase 2 implementation)
 		qris := api.Group("/qris")
 		qris.Use(authMiddleware.RequireAdminOrCashier())
 		{
-			qris.POST("/generate", s.generateQRIS)
-			qris.GET("/:transaction_id/status", s.getQRISStatus)
-			qris.POST("/refresh", s.refreshQRIS)
+			qris.POST("/generate", paymentHandler.GenerateQRIS)
+			qris.GET("/:transaction_id/status", paymentHandler.GetPaymentStatus)
+			qris.POST("/:transaction_id/refresh", paymentHandler.RefreshQRIS)
 		}
 
-		// Payment routes (placeholder for Phase 2)
+		// Payment routes (Phase 2 implementation)
 		payments := api.Group("/payments")
 		{
-			payments.POST("/callback", s.paymentCallback) // Public - webhook from Midtrans
-			payments.GET("/:id/status", authMiddleware.RequireAdminOrCashier(), s.getPaymentStatus)
+			payments.POST("/callback", paymentHandler.PaymentCallback) // Public - webhook from Midtrans
+			payments.GET("/:transaction_id/status", authMiddleware.RequireAdminOrCashier(), paymentHandler.GetPaymentStatus)
 		}
 
 		// Image routes (Admin only)

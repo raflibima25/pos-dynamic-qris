@@ -41,14 +41,14 @@ export type TransactionStatus = 'pending' | 'paid' | 'cancelled' | 'expired'
 
 export interface Transaction {
   id: string
-  userId: string
-  totalAmount: number
-  taxAmount: number
+  user_id: string
+  total_amount: number
+  tax_amount: number
   discount: number
   status: TransactionStatus
   notes?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
   items: TransactionItem[]
   user?: User
 }
@@ -61,6 +61,33 @@ export interface TransactionItem {
   unitPrice: number
   totalPrice: number
   product?: Product
+}
+
+export type PaymentStatus = 'pending' | 'success' | 'failed' | 'expired' | 'cancelled'
+export type PaymentMethod = 'qris'
+
+export interface Payment {
+  id: string
+  transaction_id: string
+  amount: number
+  method: PaymentMethod
+  status: PaymentStatus
+  external_id?: string
+  paid_at?: string
+  expires_at: string
+  created_at: string
+  updated_at: string
+  qr_code?: QRISCode
+}
+
+export interface QRISCode {
+  id: string
+  transaction_id: string
+  payment_id: string
+  qr_code: string      // QRIS EMVCo string for QR generation
+  url?: string         // Midtrans simulator URL for testing
+  expires_at: string
+  created_at: string
 }
 
 export interface ApiResponse<T> {

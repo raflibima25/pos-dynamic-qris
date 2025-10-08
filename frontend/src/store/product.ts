@@ -56,15 +56,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   getProduct: async (id: string) => {
     set({ loading: true, error: null })
-    
+
     try {
       const response = await api.get(`/products/${id}`)
-      const product = response.data.data
-      
+      // With fetch API, response.data contains the product
+      const product = response.data
+
       set({ loading: false })
       return product
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to get product'
+      const errorMessage = error.message || 'Failed to get product'
       set({ error: errorMessage, loading: false })
       return null
     }
@@ -92,19 +93,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   updateProduct: async (id: string, productData: Partial<Product>) => {
     set({ loading: true, error: null })
-    
+
     try {
       const response = await api.put(`/products/${id}`, productData)
-      const updatedProduct = response.data.data
-      
+      // With fetch API, response.data contains the updated product
+      const updatedProduct = response.data
+
       set(state => ({
         products: state.products.map(p => p.id === id ? updatedProduct : p),
         loading: false
       }))
-      
+
       return updatedProduct
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to update product'
+      const errorMessage = error.message || 'Failed to update product'
       set({ error: errorMessage, loading: false })
       return null
     }
@@ -128,19 +130,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   updateStock: async (id: string, stock: number) => {
     set({ loading: true, error: null })
-    
+
     try {
       const response = await api.patch(`/products/${id}/stock`, { stock })
-      const updatedProduct = response.data.data
-      
+      // With fetch API, response.data contains the updated product
+      const updatedProduct = response.data
+
       set(state => ({
         products: state.products.map(p => p.id === id ? updatedProduct : p),
         loading: false
       }))
-      
+
       return updatedProduct
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to update stock'
+      const errorMessage = error.message || 'Failed to update stock'
       set({ error: errorMessage, loading: false })
       return null
     }

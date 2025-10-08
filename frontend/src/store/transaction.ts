@@ -34,29 +34,46 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   createTransaction: async (items: CartItem[], notes?: string) => {
     set({ loading: true, error: null })
-    
+
     try {
       const transactionItems = items.map(item => ({
         product_id: item.product.id,
-        quantity: item.quantity,
-        price: item.product.price
+        quantity: item.quantity
       }))
+
+      console.log('Sending transaction request:', { items: transactionItems, notes })
 
       const response = await api.post('/transactions', {
         items: transactionItems,
         notes: notes || ''
       })
 
-      const transaction = response.data.data
-      set({ 
+      console.log('Full API response:', response)
+
+      // With fetch API (not axios), response is already parsed JSON
+      // Backend returns: { success: true, message: "...", data: {...} }
+      // So response.data contains the transaction object
+      const transaction = response.data
+
+      console.log('Extracted transaction:', transaction)
+
+      if (!transaction || !transaction.id) {
+        console.error('Invalid transaction structure:', transaction)
+        throw new Error('Invalid transaction response from server')
+      }
+
+      set({
         currentTransaction: transaction,
         transactions: [transaction, ...get().transactions],
-        loading: false 
+        loading: false
       })
-      
+
+      console.log('Transaction stored successfully:', transaction.id)
       return transaction
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to create transaction'
+      console.error('Transaction creation error details:', error)
+      console.error('Error response:', error.response)
+      const errorMessage = error.message || error.response?.data?.message || 'Failed to create transaction'
       set({ error: errorMessage, loading: false })
       return null
     }

@@ -21,15 +21,18 @@ func NewTransactionRepository(db *gorm.DB) repositories.TransactionRepository {
 func (r *transactionRepositoryImpl) Create(ctx context.Context, transaction *entities.Transaction) error {
 	// Use transaction to ensure data consistency
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Create the transaction
-		if err := tx.Create(transaction).Error; err != nil {
+		// Create the transaction first
+		if err := tx.Omit("Items").Create(transaction).Error; err != nil {
 			return err
 		}
 
 		// Create transaction items if any
-		for i := range transaction.Items {
-			transaction.Items[i].TransactionID = transaction.ID
-			if err := tx.Create(&transaction.Items[i]).Error; err != nil {
+		// Set TransactionID for each item and let database handle UUID generation
+		if len(transaction.Items) > 0 {
+			for i := range transaction.Items {
+				transaction.Items[i].TransactionID = transaction.ID
+			}
+			if err := tx.Create(&transaction.Items).Error; err != nil {
 				return err
 			}
 		}
@@ -39,6 +42,19 @@ func (r *transactionRepositoryImpl) Create(ctx context.Context, transaction *ent
 }
 
 func (r *transactionRepositoryImpl) GetByID(ctx context.Context, id string) (*entities.Transaction, error) {
+	var transaction entities.Transaction
+	err := r.db.WithContext(ctx).
+		Where("id = ?", id).
+		First(&transaction).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+func (r *transactionRepositoryImpl) GetByIDWithDetails(ctx context.Context, id string) (*entities.Transaction, error) {
 	var transaction entities.Transaction
 	err := r.db.WithContext(ctx).
 		Preload("User").

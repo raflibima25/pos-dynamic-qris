@@ -8,12 +8,13 @@ import (
 type TransactionRepository interface {
 	Create(ctx context.Context, transaction *entities.Transaction) error
 	GetByID(ctx context.Context, id string) (*entities.Transaction, error)
+	GetByIDWithDetails(ctx context.Context, id string) (*entities.Transaction, error)
 	Update(ctx context.Context, transaction *entities.Transaction) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, filters TransactionFilters) ([]entities.Transaction, error)
 	GetByUserID(ctx context.Context, userID string, limit, offset int) ([]entities.Transaction, error)
 	GetByStatus(ctx context.Context, status entities.TransactionStatus, limit, offset int) ([]entities.Transaction, error)
-	
+
 	// Transaction Items operations
 	AddItem(ctx context.Context, item *entities.TransactionItem) error
 	RemoveItem(ctx context.Context, transactionID, productID string) error

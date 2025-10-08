@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CartItem } from '@/types'
 import { CartSummary } from '@/store/cart'
 import { useCartStore } from '@/store/cart'
 import { useTransactionStore } from '@/store/transaction'
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { PaymentStep } from './PaymentStep'
+import { formatRupiah } from '@/lib/currency'
 
 interface CheckoutModalProps {
   isOpen: boolean
@@ -16,37 +18,101 @@ interface CheckoutModalProps {
 }
 
 export function CheckoutModal({ isOpen, onClose, items, summary, notes }: CheckoutModalProps) {
-  const [step, setStep] = useState<'confirm' | 'processing' | 'success' | 'error'>('confirm')
+  const [step, setStep] = useState<'confirm' | 'processing' | 'success' | 'payment' | 'error'>('confirm')
   const [transactionId, setTransactionId] = useState<string | null>(null)
   const { clearCart } = useCartStore()
   const { createTransaction, loading, error } = useTransactionStore()
 
+  // Debug logging for state changes
+  console.log('CheckoutModal render - isOpen:', isOpen, 'step:', step, 'transactionId:', transactionId)
+
+  // Reset state when modal closes - BUT only if we're not in success/payment flow
+  useEffect(() => {
+    if (!isOpen && step !== 'success' && step !== 'payment') {
+      console.log('Modal closed - resetting state')
+      setStep('confirm')
+      setTransactionId(null)
+    }
+  }, [isOpen, step])
+
+  // Debug: Watch step changes
+  useEffect(() => {
+    console.log('🔄 Step changed to:', step)
+  }, [step])
+
+  // Debug: Watch transactionId changes
+  useEffect(() => {
+    console.log('🆔 TransactionId changed to:', transactionId)
+  }, [transactionId])
+
   if (!isOpen) return null
 
   const handleConfirmOrder = async () => {
+    console.log('=== Starting checkout process ===')
     setStep('processing')
-    
+
     try {
+      console.log('Creating transaction with items:', items)
       const transaction = await createTransaction(items, notes)
-      
-      if (transaction) {
+      console.log('Transaction response:', transaction)
+
+      if (transaction && transaction.id) {
+        console.log('✅ Transaction created successfully:', transaction.id)
+
+        // Set both transactionId and step in one go
+        console.log('Setting transactionId:', transaction.id)
         setTransactionId(transaction.id)
+        console.log('Setting step to success')
         setStep('success')
-        // Clear cart after successful transaction
-        clearCart()
+
+        // DON'T clear cart yet - wait until payment complete or modal closes
+        // clearCart() will be called in handlePaymentComplete
       } else {
+        console.error('❌ Transaction creation failed: no transaction returned')
+        console.error('Transaction object:', transaction)
         setStep('error')
       }
     } catch (err) {
+      console.error('❌ Transaction creation error:', err)
       setStep('error')
     }
   }
 
+  const handleProceedToPayment = () => {
+    if (transactionId) {
+      setStep('payment')
+    }
+  }
+
+  const handlePaymentComplete = () => {
+    console.log('Payment completed - clearing cart and closing modal')
+    // Clear cart only when payment is complete
+    clearCart()
+    onClose()
+    // Reset step when closing
+    setStep('confirm')
+    setTransactionId(null)
+  }
+
   const handleClose = () => {
     if (step !== 'processing') {
+      console.log('Closing modal from step:', step)
+      // If we created a transaction but didn't complete payment, keep the cart
+      // Only clear if payment was completed
+      if (step === 'success' || step === 'payment') {
+        console.log('Transaction was created, keeping cart items')
+      }
       onClose()
       // Reset step when closing
       setStep('confirm')
+      setTransactionId(null)
+    }
+  }
+
+  const handleBackdropClick = () => {
+    // Don't allow closing modal by clicking backdrop during payment process
+    if (step !== 'processing' && step !== 'payment') {
+      handleClose()
     }
   }
 
@@ -54,10 +120,10 @@ export function CheckoutModal({ isOpen, onClose, items, summary, notes }: Checko
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleClose} />
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleBackdropClick} />
         
-        {/* Modal */}
-        <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl">
+        {/* Modal - wider for payment step to accommodate QR code */}
+        <div className={`relative w-full ${step === 'payment' ? 'max-w-lg' : 'max-w-md'} bg-white rounded-lg shadow-xl`}>
           {step === 'confirm' && (
             <ConfirmStep
               items={items}
@@ -77,6 +143,16 @@ export function CheckoutModal({ isOpen, onClose, items, summary, notes }: Checko
               transactionId={transactionId}
               total={summary.total}
               onClose={handleClose}
+              onProceedToPayment={handleProceedToPayment}
+            />
+          )}
+          
+          {step === 'payment' && transactionId && (
+            <PaymentStep
+              transactionId={transactionId}
+              total={summary.total}
+              onPaymentComplete={handlePaymentComplete}
+              onBack={() => setStep('success')}
             />
           )}
           
@@ -127,7 +203,7 @@ function ConfirmStep({ items, summary, notes, onConfirm, onClose }: ConfirmStepP
                   {item.quantity}x {item.product.name}
                 </span>
                 <span className="text-gray-600">
-                  ${(item.quantity * item.product.price).toFixed(2)}
+                  {formatRupiah(item.quantity * item.product.price)}
                 </span>
               </div>
             ))}
@@ -148,7 +224,7 @@ function ConfirmStep({ items, summary, notes, onConfirm, onClose }: ConfirmStepP
         <div className="border-t pt-4">
           <div className="flex justify-between text-lg font-semibold">
             <span>Total</span>
-            <span>${summary.total.toFixed(2)}</span>
+            <span>{formatRupiah(summary.total)}</span>
           </div>
         </div>
       </div>
@@ -191,9 +267,10 @@ interface SuccessStepProps {
   transactionId: string | null
   total: number
   onClose: () => void
+  onProceedToPayment: () => void
 }
 
-function SuccessStep({ transactionId, total, onClose }: SuccessStepProps) {
+function SuccessStep({ transactionId, total, onClose, onProceedToPayment }: SuccessStepProps) {
   return (
     <>
       <div className="p-8 text-center">
@@ -207,7 +284,7 @@ function SuccessStep({ transactionId, total, onClose }: SuccessStepProps) {
           Transaction #{transactionId} has been created successfully.
         </p>
         <p className="text-2xl font-bold text-green-600 mb-6">
-          ${total.toFixed(2)}
+          {formatRupiah(total)}
         </p>
         <p className="text-sm text-gray-500 mb-6">
           You can now proceed to payment or generate a QRIS code.
@@ -222,13 +299,10 @@ function SuccessStep({ transactionId, total, onClose }: SuccessStepProps) {
           Start New Order
         </button>
         <button
-          onClick={() => {
-            // TODO: Navigate to payment/QRIS generation
-            onClose()
-          }}
+          onClick={onProceedToPayment}
           className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
         >
-          Generate QRIS
+          Generate QRIS & Pay
         </button>
       </div>
     </>
